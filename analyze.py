@@ -2,16 +2,17 @@
 
 import os
 
-"""You will run this script from '.../results/TBX4/F3/xmer/'-like directory"""
+"""You will run this script from '~/RESULTS/.../SEQUENCE/'-like directory"""
 
 # Constants go here:
 
 INT_ANALYZER_DIR = 'interface_analyzer'
 ALA_DIR = 'ala_scan'
 RUN_INT_ANALYZER = '/vol/ek/Home/alisa/rosetta/Rosetta/main/source/bin/InterfaceAnalyzer.default.linuxgccrelease ' \
-                   '-in:file:s {pdb} -add_regular_scores_to_scorefile -compute_packstat -out:file:score_only {sc}'
-RUN_ALA_SCAN = '/vol/ek/share/bin/ALASCAN_ROBETTA/run_ROBETTA.sh {} A B'
-BUILD_PLOT = 'Rscript plot.R'
+                   '-in:file:l {list} -add_regular_scores_to_scorefile -compute_packstat -out:file:score_only {sc} > ' \
+                   'interface_log &'
+RUN_ALA_SCAN = '/vol/ek/share/bin/ALASCAN_ROBETTA/run_ROBETTA.sh {} A B &'
+BUILD_PLOT = 'Rscript ~/scripts/results_processing/plot.R > plot_log'
 
 ALA_RESULTS = 'PROTONATED_{}.alascan.results'
 DDG_CUT = 1
@@ -22,8 +23,11 @@ def run_interface_analyzer():
     if not os.path.exists(INT_ANALYZER_DIR):
         os.mkdir(INT_ANALYZER_DIR)
     os.chdir(INT_ANALYZER_DIR)
-    for model in os.listdir('../FINAL_RESULTS'):
-        os.system(RUN_INT_ANALYZER.format(pdb=model, sc=(os.path.basename(model) + '.sc')))
+    with open('input_list', 'w') as input_l:
+        for model in os.listdir(my_path):
+            if os.path.isfile(os.path.join(my_path, model)) and os.path.splitext(os.path.basename(model))[1] == '.pdb':
+                input_l.write(os.path.join(my_path, model) + '\n')
+        os.system(RUN_INT_ANALYZER.format(list='input_list', sc='interface_score.sc'))
     os.chdir(my_path)
 
 
@@ -31,9 +35,9 @@ def run_ala_scan():
     if not os.path.exists(ALA_DIR):
         os.mkdir(ALA_DIR)
     os.chdir(ALA_DIR)
-    for model in os.listdir('../FINAL_RESULTS'):
-        os.system(RUN_ALA_SCAN.format(model))
-
+    for model in os.listdir(my_path):
+        if os.path.isfile(os.path.join(my_path, model)) and os.path.splitext(os.path.basename(model))[1] == '.pdb':
+            os.system(RUN_ALA_SCAN.format(model))
         # fullname_results = ALA_RESULTS.format(model)
         # with open(fullname_results, 'r') as res:
         #     all_lines = res.readlines()
